@@ -6,6 +6,22 @@
 [![Telegram EN][telegram-badge]][telegram-en-url]
 [![Telegram RU][telegram-badge]][telegram-ru-url]
 
+## Table of contents
+
+- [go-tlog](#go-tlog)
+  - [Features](#features)
+  - [Installation](#installation)
+  - [Quick start](#quick-start)
+  - [Configuration](#configuration)
+    - [type Opts](#type-opts)
+    - [Main API](#main-api)
+  - [Log levels](#log-levels)
+  - [Output formats](#output-formats)
+  - [Output destinations](#output-destinations)
+  - [Examples](#examples)
+  - [Testing](#testing)
+  - [License](#license)
+
 # go-tlog
 
 `go-tlog` is a lightweight and configurable logging library for Go applications.  
@@ -133,41 +149,11 @@ Supported targets:
 
 ## Examples
 
-Ready-to-run examples are located in the `_examples/` directory:
+Included examples:
 
-```
-_examples/
- ├── stdout/
- │   └── main.go
- ├── stderr/
- │   └── main.go
- ├── file/
- │   └── main.go
- └── multi/
-     └── main.go
-```
-
-Run examples:
-
-```bash
-# Example 1 — log to STDOUT in text format
-go run ./_examples/stdout
-
-# Example 2 — log to STDERR in JSON format
-# Redirect stderr to a file and inspect its contents
-go run ./_examples/stderr 2> logs.json
-cat logs.json
-
-# Example 3 — log to a file in /tmp directory
-# The file will be created automatically if it doesn’t exist
-go run ./_examples/file
-cat /tmp/tlog_demo/app.log
-
-# Example 4 — log to multiple destinations (stdout + file)
-# This writes the same log entry both to console and to /tmp/tlog_multi/app.log
-go run ./_examples/multi
-cat /tmp/tlog_multi/app.log
-```
+- **ExampleNew_text** — basic text logger writing to stdout  
+- **ExampleNew_json** — JSON logging  
+- **ExampleNew_multi** — logging to multiple destinations (`stdout,/tmp/...`)
 
 Each example demonstrates different combinations of Path, Format, and Level,
 including how to log to multiple outputs at the same time.
@@ -177,7 +163,7 @@ including how to log to multiple outputs at the same time.
 ## Testing
 
 ```bash
-go test ./...
+make test
 ```
 
 ---
