@@ -1,12 +1,10 @@
-[![CI](https://github.com/tarantool/go-tlog/actions/workflows/ci.yml/badge.svg)](https://github.com/tarantool/go-tlog/actions/workflows/ci.yml) •
-[Telegram EN](https://t.me/tarantool) •
-[Telegram RU](https://t.me/tarantoolru)
+<a href="http://tarantool.org">
+	<img src="https://avatars2.githubusercontent.com/u/2344919?v=2&s=250" align="right">
+</a>
 
----
-
-<p href="https://www.tarantool.io">
-	<img src="https://github.com/tarantool.png" align="right" width=250>
-</p>
+[![Actions Status][actions-badge]][actions-url]
+[![Telegram EN][telegram-badge]][telegram-en-url]
+[![Telegram RU][telegram-badge]][telegram-ru-url]
 
 # go-tlog
 
@@ -187,3 +185,9 @@ go test ./...
 ## License
 
 BSD 2-Clause License — see [LICENSE](LICENSE)
+
+[actions-badge]: https://github.com/tarantool/go-tlog/actions/workflows/testing.yml/badge.svg
+[actions-url]: https://github.com/tarantool/go-tlog/actions/workflows/testing.yml
+[telegram-badge]: https://img.shields.io/badge/Telegram-join%20chat-blue.svg
+[telegram-en-url]: http://telegram.me/tarantool
+[telegram-ru-url]: http://telegram.me/tarantoolru
