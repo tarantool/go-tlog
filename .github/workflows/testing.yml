@@ -29,3 +29,23 @@ jobs:
 
       - name: Run tests with race-detector
         run: make test-race
+
+  golangci-lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        continue-on-error: true
+        with:
+          # The first run is for GitHub Actions error format.
+          args: --config=.golangci.yaml
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          # The second run is for human-readable error format with a file name
+          # and a line number.
+          args: --out-${NO_FUTURE}format colored-line-number --config=.golangci.yaml

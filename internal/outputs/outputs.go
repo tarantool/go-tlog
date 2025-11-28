@@ -92,6 +92,8 @@ func multiClose(files []*os.File) error {
 	return errors.Join(errs...)
 }
 
+// Write writes p to all configured output destinations.
+// It implements io.Writer and is used by slog handlers.
 func (o *Outputs) Write(p []byte) (int, error) {
 	return o.w.Write(p)
 }

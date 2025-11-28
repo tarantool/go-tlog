@@ -25,6 +25,7 @@ func newBuffer() *buffer {
 	return bufPool.Get().(*buffer)
 }
 
+// Free releases the buffer back to the pool.
 func (b *buffer) Free() {
 	// To reduce peak allocation, return only smaller buffers to the pool.
 	const maxBufferSize = 16 << 10
@@ -34,33 +35,40 @@ func (b *buffer) Free() {
 	}
 }
 
+// Reset clears the buffer contents by setting its length to zero.
 func (b *buffer) Reset() {
 	b.SetLen(0)
 }
 
+// Write appends the provided bytes to the buffer.
 func (b *buffer) Write(p []byte) (int, error) {
 	*b = append(*b, p...)
 	return len(p), nil
 }
 
+// WriteString appends the provided string to the buffer.
 func (b *buffer) WriteString(s string) (int, error) {
 	*b = append(*b, s...)
 	return len(s), nil
 }
 
+// WriteByte appends a single byte to the buffer.
 func (b *buffer) WriteByte(c byte) error {
 	*b = append(*b, c)
 	return nil
 }
 
+// String returns the contents of the buffer as a string.
 func (b *buffer) String() string {
 	return string(*b)
 }
 
+// Len returns the number of bytes currently stored in the buffer.
 func (b *buffer) Len() int {
 	return len(*b)
 }
 
+// SetLen reslices the buffer to the specified length.
 func (b *buffer) SetLen(n int) {
 	*b = (*b)[:n]
 }
