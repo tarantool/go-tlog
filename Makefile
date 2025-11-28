@@ -7,38 +7,38 @@ PKG             := github.com/tarantool/go-tlog
 
 all: test
 
-## Run tests
+## Run tests.
 test:
 	$(GO) test ./...
 
-## Run tests with race detector
+## Run tests with race detector.
 test-race:
 	$(GO) test -race ./...
 
-## Run tests with coverage
+## Run tests with coverage.
 test-coverage:
 	$(GO) test -covermode=atomic -coverprofile=coverage.out ./...
 
-## Run golangci-lint
+## Run golangci-lint.
 lint:
 	$(GOLANGCI_LINT) run ./...
 
-## Format source code
+## Format source code.
 fmt:
 	$(GO) fmt ./...
 
-## Tidy go.mod / go.sum
+## Tidy go.mod / go.sum.
 tidy:
 	$(GO) mod tidy
 
-## Run all _examples to ensure they compile and run without panic
+## Run all _examples to ensure they compile and run without panic.
 examples:
 	$(GO) run ./_examples/stdout
 	$(GO) run ./_examples/stderr >/dev/null 2>&1 || true
 	$(GO) run ./_examples/file
 	$(GO) run ./_examples/multi
 
-## Show available targets
+## Show available targets.
 help:
 	@echo "Available targets:"
 	@echo "  make test           - run tests"
