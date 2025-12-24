@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Text and JSON output formats.
 - Multiple output destinations: stdout, stderr, file paths, multi-target.
 - Automatic timestamp, source file and line number.
-- Stacktrace collection for error-level messages.
+- Stacktrace support with configurable stacktrace level.
 - Test suite for core functionality.
 - Idiomatic Go examples (testable examples).
 - Makefile, GitHub Actions CI workflow, README, LICENSE, lint configuration.
