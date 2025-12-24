@@ -16,6 +16,8 @@
     - [type Opts](#type-opts)
     - [Main API](#main-api)
   - [Log levels](#log-levels)
+  - [Stacktraces](#stacktraces)
+    - [Overriding stacktrace level](#overriding-stacktrace-level)
   - [Output formats](#output-formats)
   - [Output destinations](#output-destinations)
   - [Examples](#examples)
@@ -37,7 +39,7 @@ and fine-grained log-level control.
 - Multiple output targets: **stdout**, **stderr**, **files**
 - Log levels: `Trace`, `Debug`, `Info`, `Warn`, `Error`
 - Automatic timestamp, source file, and line number
-- Stacktrace for errors
+- Automatic stacktraces based on log level
 
 ---
 
@@ -73,7 +75,7 @@ func main() {
 	}
 	defer log.Close()
 
-	logger := log.Logger().With(tlog.String("component", "demo"))
+	logger := log.Logger().With(slog.String("component", "demo"))
 	logger.Info("service started", "port", 8080)
 	logger.Error("failed to connect", "err", "timeout")
 }
@@ -119,6 +121,40 @@ type Opts struct {
 | `Info`  | Normal operational messages                 |
 | `Warn`  | Non-fatal warnings                          |
 | `Error` | Errors and exceptions (includes stacktrace) |
+
+---
+
+## Stacktraces
+
+`go-tlog` can automatically attach stacktraces to log records.
+
+By default, the stacktrace threshold is the same as the configured log level.
+This means that stacktraces are added starting from the current log level
+and for all higher-severity messages.
+
+The default behavior is:
+
+| Log level | Stacktrace is added for          |
+|-----------|----------------------------------|
+| `Trace`   | `DEBUG`, `INFO`, `WARN`, `ERROR` |
+| `Debug`   | `DEBUG`, `INFO`, `WARN`, `ERROR` |
+| `Info`    | `INFO`, `WARN`, `ERROR`          |
+| `Warn`    | `WARN`, `ERROR`                  |
+| `Error`   | `ERROR`                          |
+
+You can override this behavior using `StacktraceLevel` to control
+the stacktrace threshold independently of the log level.
+
+### Overriding stacktrace level
+
+```go
+log, err := tlog.New(tlog.Opts{
+    Level:           tlog.LevelInfo,
+    StacktraceLevel: tlog.LevelError,
+    Format:          tlog.FormatText,
+    Path:            "stdout",
+})
+```
 
 ---
 
