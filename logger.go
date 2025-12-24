@@ -26,6 +26,10 @@ type Opts struct {
 	// Use "stdout" and "stderr" for os streams and file paths for files.
 	// Default is "stderr".
 	Path string
+	// StacktraceLevel overrides the default stacktrace threshold.
+	// If set, stacktraces will be attached starting from this level,
+	// regardless of the main log Level.
+	StacktraceLevel Level
 }
 
 // New creates a new Logger with the given options.
@@ -39,22 +43,37 @@ func New(opts Opts) (*Logger, error) {
 
 	switch opts.Level {
 	case LevelTrace:
-		traceLevel = slog.LevelDebug
-		logLevel = slog.LevelDebug
+		fallthrough
 	case LevelDebug:
-		traceLevel = slog.LevelError
+		traceLevel = slog.LevelDebug
 		logLevel = slog.LevelDebug
 	case LevelDefault:
 		fallthrough
 	case LevelInfo:
-		traceLevel = slog.LevelError
+		traceLevel = slog.LevelInfo
 		logLevel = slog.LevelInfo
 	case LevelWarn:
-		traceLevel = slog.LevelError
+		traceLevel = slog.LevelWarn
 		logLevel = slog.LevelWarn
 	case LevelError:
 		traceLevel = slog.LevelError
 		logLevel = slog.LevelError
+	}
+
+	// Override stacktrace level if explicitly configured.
+	if opts.StacktraceLevel != 0 {
+		switch opts.StacktraceLevel {
+		case LevelTrace, LevelDebug:
+			traceLevel = slog.LevelDebug
+		case LevelInfo:
+			traceLevel = slog.LevelInfo
+		case LevelWarn:
+			traceLevel = slog.LevelWarn
+		case LevelError:
+			traceLevel = slog.LevelError
+		default:
+			traceLevel = slog.LevelDebug
+		}
 	}
 
 	if opts.Path == "" {
