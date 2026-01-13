@@ -24,9 +24,10 @@ func Test_Logger(t *testing.T) {
 		{
 			name: "InfoMessage_DebugTextLogger",
 			opts: tlog.Opts{
-				Level:  tlog.LevelDebug,
-				Format: tlog.FormatText,
-				Path:   "InfoMessage_DebugPlainLogger.log",
+				Level:           tlog.LevelDebug,
+				StacktraceLevel: tlog.LevelError,
+				Format:          tlog.FormatText,
+				Path:            "InfoMessage_DebugPlainLogger.log",
 			},
 			log: func(l *slog.Logger) {
 				l.Info("my info message")
@@ -36,6 +37,23 @@ func Test_Logger(t *testing.T) {
 			assert: func(require *require.Assertions, logs string) {
 				require.Contains(logs, "my info message")
 				require.NotContains(logs, "stacktrace=")
+			},
+		},
+		{
+			name: "WarnMessage_InfoTextLogger_WithWarnStacktraceLevel",
+			opts: tlog.Opts{
+				Level:           tlog.LevelInfo,
+				StacktraceLevel: tlog.LevelWarn,
+				Format:          tlog.FormatText,
+				Path:            "WarnMessage_InfoTextLogger_WithWarnStacktraceLevel.log",
+			},
+			log: func(l *slog.Logger) {
+				l.Warn("my warn message")
+			},
+			assert: func(require *require.Assertions, logs string) {
+				require.Contains(logs, "my warn message")
+				require.Contains(logs, "stacktrace=")
+				require.Contains(logs, "tlog_test.Test_Logger")
 			},
 		},
 		{
@@ -104,6 +122,22 @@ func Test_Logger(t *testing.T) {
 			},
 		},
 		{
+			name: "InfoMessage_TraceTextLogger_WithErrorStacktraceLevel",
+			opts: tlog.Opts{
+				Level:           tlog.LevelTrace,
+				StacktraceLevel: tlog.LevelError,
+				Format:          tlog.FormatText,
+				Path:            "InfoMessage_TraceTextLogger_WithErrorStacktraceLevel.log",
+			},
+			log: func(l *slog.Logger) {
+				l.Info("my info message")
+			},
+			assert: func(require *require.Assertions, logs string) {
+				require.Contains(logs, "my info message")
+				require.NotContains(logs, "stacktrace=")
+			},
+		},
+		{
 			name: "InfoMessage_DefaultLogger",
 			opts: tlog.Opts{
 				// Level and Format will be defaulted by New.
@@ -119,9 +153,10 @@ func Test_Logger(t *testing.T) {
 		{
 			name: "InfoMessage_DebugJSONLogger",
 			opts: tlog.Opts{
-				Level:  tlog.LevelDebug,
-				Format: tlog.FormatJSON,
-				Path:   "InfoMessage_DebugPlainLogger.json",
+				Level:           tlog.LevelDebug,
+				StacktraceLevel: tlog.LevelError,
+				Format:          tlog.FormatJSON,
+				Path:            "InfoMessage_DebugPlainLogger.json",
 			},
 			log: func(l *slog.Logger) {
 				l.Info("my info message")
