@@ -1,9 +1,10 @@
+version: "2"
+
 run:
   timeout: 5m
   modules-download-mode: readonly
 
 issues:
-  exclude-use-default: false
   max-same-issues: 0
   max-issues-per-linter: 0
 
@@ -13,36 +14,34 @@ linters:
     - staticcheck
     - revive
     - errcheck
-    - gosimple
     - ineffassign
     - unused
-    - typecheck
-    - gofmt
-    - goimports
     - misspell
     - gocritic
-
-linters-settings:
-  revive:
-    severity: warning
+  settings:
+    revive:
+      severity: warning
+      rules:
+        - name: unused-parameter
+        - name: unreachable-code
+        - name: indent-error-flow
+        - name: exported
+        - name: blank-imports
+        - name: var-declaration
+        - name: if-return
+    misspell:
+      locale: US
+  exclusions:
     rules:
-      - name: unused-parameter
-      - name: unreachable-code
-      - name: indent-error-flow
-      - name: exported
-      - name: blank-imports
-      - name: var-declaration
-      - name: if-return
+      - path: ^_examples/
+        linters: [revive, staticcheck, govet, gocritic]
+      - path: \.pb\.go$|_gen\.go$
+        linters: [all]
 
-  misspell:
-    locale: US
-
-  goimports:
-    local-prefixes: github.com/tarantool/go-tlog
-
-# Skip linters on example files and any generated code
-exclude-rules:
-  - path: ^_examples/
-    linters: [revive, staticcheck, govet, gocritic]
-  - path: \.pb\.go$|_gen\.go$
-    linters: [all]
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes: [github.com/tarantool/go-tlog]
