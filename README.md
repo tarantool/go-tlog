@@ -2,6 +2,7 @@
 	<img src="https://avatars2.githubusercontent.com/u/2344919?v=2&s=250" align="right">
 </a>
 
+[![Go Reference][godoc-badge]][godoc-url]
 [![Actions Status][actions-badge]][actions-url]
 [![Telegram EN][telegram-badge]][telegram-en-url]
 [![Telegram RU][telegram-badge]][telegram-ru-url]
@@ -210,6 +211,8 @@ BSD 2-Clause License — see [LICENSE](LICENSE)
 
 [actions-badge]: https://github.com/tarantool/go-tlog/actions/workflows/testing.yml/badge.svg
 [actions-url]: https://github.com/tarantool/go-tlog/actions/workflows/testing.yml
+[godoc-badge]: https://pkg.go.dev/badge/github.com/tarantool/go-tlog.svg
+[godoc-url]: https://pkg.go.dev/github.com/tarantool/go-tlog
 [telegram-badge]: https://img.shields.io/badge/Telegram-join%20chat-blue.svg
 [telegram-en-url]: http://telegram.me/tarantool
 [telegram-ru-url]: http://telegram.me/tarantoolru
