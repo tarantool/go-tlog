@@ -2,6 +2,7 @@ package tlog_test
 
 import (
 	"log/slog"
+	"os"
 
 	"github.com/tarantool/go-tlog"
 )
@@ -55,4 +56,28 @@ func ExampleNew_multi() {
 
 	logger := log.Logger().With(slog.String("component", "example_multi"))
 	logger.Info("message written to stdout and file")
+}
+
+// ExampleNewJSONHandler shows how to create a JSON handler
+// that writes to any io.Writer.
+func ExampleNewJSONHandler() {
+	handler := tlog.NewJSONHandler(os.Stdout, &tlog.HandlerOptions{
+		Level:           tlog.LevelInfo,
+		StacktraceLevel: tlog.LevelError,
+	})
+	logger := slog.New(handler)
+
+	logger.Info("service started")
+}
+
+// ExampleNewTextHandler shows how to create a text handler
+// that writes to any io.Writer.
+func ExampleNewTextHandler() {
+	handler := tlog.NewTextHandler(os.Stdout, &tlog.HandlerOptions{
+		Level:           tlog.LevelInfo,
+		StacktraceLevel: tlog.LevelError,
+	})
+	logger := slog.New(handler)
+
+	logger.Info("service started")
 }
