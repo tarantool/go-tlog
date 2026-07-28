@@ -7,10 +7,13 @@ import (
 	"io/fs"
 	"os"
 	"strings"
+	"sync"
 )
 
 // Outputs is io.WriteCloser for multiple output paths.
 type Outputs struct {
+	mu    sync.RWMutex
+	paths []string
 	files []*os.File
 	w     io.Writer
 }
@@ -22,27 +25,37 @@ func New(paths string) (*Outputs, error) {
 		return nil, errors.New("empty paths")
 	}
 
-	slice := splitPaths(paths)
+	pathsSlice := splitPaths(paths)
 
-	files := make([]*os.File, 0, len(slice))
-	writers := make([]io.Writer, 0, len(slice))
+	files, w, err := openFiles(pathsSlice)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, path := range slice {
+	return &Outputs{
+		paths: pathsSlice,
+		files: files,
+		w:     w,
+	}, nil
+}
+
+func openFiles(paths []string) ([]*os.File, io.Writer, error) {
+	files := make([]*os.File, 0, len(paths))
+	writers := make([]io.Writer, 0, len(paths))
+
+	for _, path := range paths {
 		file, err := openFile(path)
 		if err != nil {
 			_ = multiClose(files)
 
-			return nil, fmt.Errorf("failed to open path %q: %w", path, err)
+			return nil, nil, fmt.Errorf("failed to open path %q: %w", path, err)
 		}
 
 		files = append(files, file)
 		writers = append(writers, file)
 	}
 
-	return &Outputs{
-		files: files,
-		w:     io.MultiWriter(writers...),
-	}, nil
+	return files, io.MultiWriter(writers...), nil
 }
 
 func splitPaths(paths string) []string {
@@ -95,10 +108,38 @@ func multiClose(files []*os.File) error {
 // Write writes p to all configured output destinations.
 // It implements io.Writer and is used by slog handlers.
 func (o *Outputs) Write(p []byte) (int, error) {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	return o.w.Write(p)
+}
+
+// Reopen closes current file outputs and opens them once again.
+// Can be used for logrotate.
+func (o *Outputs) Reopen() error {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	files, w, err := openFiles(o.paths)
+	if err != nil {
+		return fmt.Errorf("failed to reopen outputs: %w", err)
+	}
+
+	oldFiles := o.files
+	o.files = files
+	o.w = w
+
+	if err := multiClose(oldFiles); err != nil {
+		return fmt.Errorf("failed to close old outputs (reopen succeeded): %w", err)
+	}
+
+	return nil
 }
 
 // Close closes all file outputs except stdout and stderr.
 func (o *Outputs) Close() error {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	return multiClose(o.files)
 }

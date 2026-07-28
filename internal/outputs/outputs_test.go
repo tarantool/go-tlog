@@ -84,10 +84,7 @@ func Test_Outputs_Std(t *testing.T) {
 func Test_Outputs_File(t *testing.T) {
 	require := require.New(t)
 
-	filename := filepath.Join(os.TempDir(), "Test_Outputs_File.log")
-	defer func(name string) {
-		_ = os.Remove(name)
-	}(filename)
+	filename := filepath.Join(t.TempDir(), "Test_Outputs_File.log")
 
 	outputs, err := outputs.New(filename)
 	require.NoError(err)
@@ -104,10 +101,7 @@ func Test_Outputs_Multiple(t *testing.T) {
 	require := require.New(t)
 
 	// Prepare file 1.
-	filename1 := filepath.Join(os.TempDir(), "Test_Outputs_Multiple1.log")
-	defer func(name string) {
-		_ = os.Remove(name)
-	}(filename1)
+	filename1 := filepath.Join(t.TempDir(), "Test_Outputs_Multiple1.log")
 
 	// Prepare stdout.
 	r, w, _ := os.Pipe()
@@ -120,10 +114,7 @@ func Test_Outputs_Multiple(t *testing.T) {
 	}()
 
 	// Prepare file 2.
-	filename2 := filepath.Join(os.TempDir(), "Test_Outputs_Multiple2.log")
-	defer func(name string) {
-		_ = os.Remove(name)
-	}(filename2)
+	filename2 := filepath.Join(t.TempDir(), "Test_Outputs_Multiple2.log")
 
 	outputs, err := outputs.New(filename1 + ",stdout," + filename2)
 	require.NoError(err)
@@ -147,4 +138,37 @@ func Test_Outputs_Multiple(t *testing.T) {
 	file2Out, err := os.ReadFile(filename2)
 	require.NoError(err)
 	require.Contains(string(file2Out), "log_message")
+}
+
+func Test_Outputs_Rotate(t *testing.T) {
+	require := require.New(t)
+
+	filename := filepath.Join(t.TempDir(), "Test_Outputs_File.log")
+
+	outputs, err := outputs.New(filename)
+	require.NoError(err)
+
+	_, err = outputs.Write([]byte("log_message1"))
+	require.NoError(err)
+
+	rotated := filename + ".1"
+
+	err = os.Rename(filename, rotated)
+	require.NoError(err)
+
+	err = outputs.Reopen()
+	require.NoError(err)
+
+	_, err = outputs.Write([]byte("log_message2"))
+	require.NoError(err)
+
+	outOld, err := os.ReadFile(rotated)
+	require.NoError(err)
+	require.Contains(string(outOld), "log_message1")
+	require.NotContains(string(outOld), "log_message2")
+
+	out, err := os.ReadFile(filename)
+	require.NoError(err)
+	require.NotContains(string(out), "log_message1")
+	require.Contains(string(out), "log_message2")
 }
