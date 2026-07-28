@@ -2,31 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
-and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+and this project adheres to
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
 ### Added
-- Text and JSON handlers compatible with slog.
-- Support for reopening log files.
+
+- `NewTextHandler` and `NewJSONHandler` construct a standard `slog.Handler`
+  over any `io.Writer`, so an application can build its own `slog.Logger` with
+  the go-tlog format and stacktrace behavior (gh-3).
+- `Logger.Reopen` and `Logger.ReopenOnSignal` reopen file outputs, so a logger
+  can survive logrotate.
 
 ### Changed
-- Logger outputs close is thread-safe now.
+
+- Logger outputs are safe to close concurrently with writes.
 
 ### Fixed
 
+- Fixed loggers derived with `Logger.With` or `Logger.WithGroup` silently
+  losing their stacktraces.
+- Fixed a panic in the text format when a `ReplaceAttr` function dropped an
+  attribute by returning the zero `slog.Attr`.
 
-## [v1.0.0] - 2026-01-13
+## [1.0.0] - 2026-01-13
 
 ### Added
 
-- Core structured logging library for Go.
-- Support for log levels: Trace, Debug, Info, Warn, Error.
+- Structured logging for Go on top of `log/slog`, configured through a single
+  `Opts` value.
+- Log levels `Trace`, `Debug`, `Info`, `Warn` and `Error`.
 - Text and JSON output formats.
-- Multiple output destinations: stdout, stderr, file paths, multi-target.
-- Automatic timestamp, source file and line number.
-- Stacktrace support with configurable stacktrace level.
-- Test suite for core functionality.
-- Idiomatic Go examples (testable examples).
-- Makefile, GitHub Actions CI workflow, README, LICENSE, lint configuration.
+- Output to `stdout`, `stderr`, files, or several destinations at once through
+  a comma-separated `Path`.
+- Timestamp, source file and line number attached to every record.
+- Stacktraces attached automatically from the log level upwards, with
+  `StacktraceLevel` to set that threshold independently of the log level
+  (gh-2).
+
+[Unreleased]: https://github.com/tarantool/go-tlog/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/tarantool/go-tlog/releases/tag/v1.0.0
