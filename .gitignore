@@ -1,4 +1,8 @@
 # IDE
 .idea
 
+# Dependencies are resolved through the module proxy; the vendor directory is
+# not committed. See CONTRIBUTING.md.
+vendor/
+
 coverage.out
