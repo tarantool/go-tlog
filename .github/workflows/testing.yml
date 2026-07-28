@@ -2,6 +2,7 @@ name: testing
 
 env:
   GOLANGCI_LINT_VERSION: v2.11.4
+  CODESPELL_VERSION: v2.4.1
 
 # Every job below skips pull requests opened from this repository, because the
 # branch behind such a PR already ran on push. That split only works if push
@@ -35,10 +36,10 @@ jobs:
       GOTOOLCHAIN: local
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: ${{ matrix.golang }}
           check-latest: true
@@ -65,10 +66,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: "stable"
           check-latest: true
@@ -91,11 +92,11 @@ jobs:
        github.event.pull_request.head.repo.full_name != github.repository)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: "stable"
           check-latest: true
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
@@ -122,8 +123,13 @@ jobs:
        github.event.pull_request.head.repo.full_name != github.repository)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: codespell-project/actions-codespell@v2
+      - uses: actions/checkout@v7
+
+      - name: Install codespell
+        run: pip3 install codespell==${CODESPELL_VERSION#v}
+
+      - name: Run codespell
+        run: make spell
 
   generate:
     name: Check generated code
@@ -134,8 +140,8 @@ jobs:
        github.event.pull_request.head.repo.full_name != github.repository)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: "stable"
           check-latest: true
