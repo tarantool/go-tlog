@@ -217,3 +217,52 @@ func Test_Handler_StacktraceSurvivesDerivation(t *testing.T) {
 		})
 	}
 }
+
+// Test_Handler_ReplaceAttrCanDropAttrs is a regression test: dropping an
+// attribute by returning the zero slog.Attr from ReplaceAttr — the way the
+// standard library documents — used to panic in the text handler.
+func Test_Handler_ReplaceAttrCanDropAttrs(t *testing.T) {
+	t.Parallel()
+
+	drop := func(_ []string, a slog.Attr) slog.Attr {
+		if a.Key == slog.TimeKey || a.Key == "secret" {
+			return slog.Attr{}
+		}
+
+		return a
+	}
+
+	for _, tc := range []struct {
+		name    string
+		timeKey string
+		new     func(*bytes.Buffer, *tlog.HandlerOptions) slog.Handler
+	}{
+		{name: "text", timeKey: "time=", new: func(b *bytes.Buffer, o *tlog.HandlerOptions) slog.Handler {
+			return tlog.NewTextHandler(b, o)
+		}},
+		{name: "json", timeKey: `"time":`, new: func(b *bytes.Buffer, o *tlog.HandlerOptions) slog.Handler {
+			return tlog.NewJSONHandler(b, o)
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var buf bytes.Buffer
+
+			handler := tc.new(&buf, &tlog.HandlerOptions{
+				Level:       tlog.LevelInfo,
+				ReplaceAttr: drop,
+			})
+
+			require.NotPanics(t, func() {
+				slog.New(handler).Info("hello", slog.String("secret", "s3cr3t"), slog.Int("port", 8080))
+			})
+
+			r := require.New(t)
+			r.Contains(buf.String(), "hello")
+			r.Contains(buf.String(), "8080")
+			r.NotContains(buf.String(), "s3cr3t")
+			r.NotContains(buf.String(), tc.timeKey)
+		})
+	}
+}
