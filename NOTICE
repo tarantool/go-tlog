@@ -1,0 +1,14 @@
+go-tlog
+Copyright (c) 2025, Tarantool AUTHORS
+
+This product includes software developed at Tarantool, licensed under the
+BSD 2-Clause License (see LICENSE).
+
+--------------------------------------------------------------------------------
+
+Portions of this software are derived from the Go standard library
+(the log/slog package), Copyright 2009 The Go Authors, licensed under the
+BSD 3-Clause License.
+
+The derived sources live under internal/slog/ and carry the original copyright
+headers. The full text of their license is in internal/slog/LICENSE.
