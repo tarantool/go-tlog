@@ -1,10 +1,16 @@
 package tlog_test
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -239,4 +245,157 @@ func Test_Logger(t *testing.T) {
 			tc.assert(r, string(logs))
 		})
 	}
+}
+
+func Test_LoggerReopen(t *testing.T) {
+	t.Parallel()
+
+	r := require.New(t)
+
+	dir := t.TempDir()
+
+	filename := filepath.Join(dir, "Test_LoggerReopen.log")
+
+	l, err := tlog.New(tlog.Opts{Path: filename})
+	r.NoError(err)
+
+	defer func() {
+		_ = l.Close()
+	}()
+
+	l.Logger().Info("log_message1")
+
+	rotated := filename + ".1"
+
+	err = os.Rename(filename, rotated)
+	r.NoError(err)
+
+	err = l.Reopen()
+	r.NoError(err)
+
+	l.Logger().Info("log_message2")
+
+	outOld, err := os.ReadFile(rotated)
+	r.NoError(err)
+	r.Contains(string(outOld), "log_message1")
+	r.NotContains(string(outOld), "log_message2")
+
+	out, err := os.ReadFile(filename)
+	r.NoError(err)
+	r.NotContains(string(out), "log_message1")
+	r.Contains(string(out), "log_message2")
+}
+
+func Test_LoggerReopenOnSignal(t *testing.T) {
+	// Do not run in parallel, sends signals to self process.
+
+	r := require.New(t)
+
+	dir := t.TempDir()
+
+	filename := filepath.Join(dir, "Test_LoggerReopenOnSignal.log")
+
+	l, err := tlog.New(tlog.Opts{Path: filename})
+	r.NoError(err)
+
+	defer func() {
+		_ = l.Close()
+	}()
+
+	ctx, cancel := context.WithCancel(t.Context())
+	go l.ReopenOnSignal(ctx, func(err error) {
+		fmt.Fprintf(os.Stderr, "log reopen failed: %v\n", err)
+	}, syscall.SIGUSR1)
+
+	oldMessage := "log_message"
+	l.Logger().Info(oldMessage)
+
+	rotated := filename + ".1"
+
+	err = os.Rename(filename, rotated)
+	r.NoError(err)
+
+	// We cannot guarantee that signal has been already processed, so let's
+	// retry. The signal may also be lost if the handler goroutine has not
+	// registered with signal.Notify yet, so we re-send it on each iteration
+	// until the reopen takes effect.
+	var newMessage string
+
+	for i := range 10 {
+		err = syscall.Kill(os.Getpid(), syscall.SIGUSR1)
+		r.NoError(err)
+
+		newMessage = fmt.Sprintf("log_newmessage%d", i)
+
+		l.Logger().Info(newMessage)
+
+		out, err := os.ReadFile(rotated)
+		r.NoError(err)
+
+		if !strings.Contains(string(out), newMessage) {
+			break
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	cancel()
+
+	outOld, err := os.ReadFile(rotated)
+	r.NoError(err)
+	r.Contains(string(outOld), oldMessage)
+	r.NotContains(string(outOld), newMessage)
+
+	out, err := os.ReadFile(filename)
+	r.NoError(err)
+	r.NotContains(string(out), oldMessage)
+	r.Contains(string(out), newMessage)
+}
+
+func Test_LoggerConcurrency(t *testing.T) {
+	t.Parallel()
+
+	r := require.New(t)
+
+	dir := t.TempDir()
+
+	filename := filepath.Join(dir, "Test_LoggerConcurrency.log")
+
+	l, err := tlog.New(tlog.Opts{Path: filename})
+	r.NoError(err)
+
+	defer func() {
+		_ = l.Close()
+	}()
+
+	const goroutines = 100
+
+	var wg sync.WaitGroup
+
+	for i := 0; i < goroutines; i++ {
+		wg.Add(3)
+
+		// Concurrent Logger().Info() calls.
+		go func(n int) {
+			defer wg.Done()
+
+			l.Logger().Info("concurrent info message", slog.Int("n", n))
+		}(i)
+
+		// Concurrent Reopen() calls.
+		go func() {
+			defer wg.Done()
+
+			_ = l.Reopen()
+		}()
+
+		// Concurrent Close() calls.
+		go func() {
+			defer wg.Done()
+
+			_ = l.Close()
+		}()
+	}
+
+	wg.Wait()
 }

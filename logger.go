@@ -1,8 +1,11 @@
 package tlog
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/tarantool/go-tlog/internal/outputs"
@@ -10,7 +13,7 @@ import (
 )
 
 // Logger contains slog.Logger for several outputs
-// and method to close these outputs.
+// and methods to reopen or close these outputs.
 type Logger struct {
 	outputs *outputs.Outputs
 	logger  *slog.Logger
@@ -136,6 +139,41 @@ func replaceTime(_ []string, a slog.Attr) slog.Attr {
 // It can be used directly to log messages with additional attributes.
 func (l *Logger) Logger() *slog.Logger {
 	return l.logger
+}
+
+// Reopen closes current file outputs and opens them once again.
+// Can be used for logrotate.
+func (l *Logger) Reopen() error {
+	return l.outputs.Reopen()
+}
+
+// ReopenOnSignal calls Reopen each time one of sigs arrives and returns when
+// ctx is done. It is blocking, intended to run in a goroutine:
+//
+//	go log.ReopenOnSignal(ctx, func(err error) {
+//	        fmt.Fprintf(os.Stderr, "log reopen failed: %v\n", err)
+//	}, syscall.SIGHUP)
+//
+// onErr must not write through this Logger.
+func (l *Logger) ReopenOnSignal(ctx context.Context, onErr func(error), sigs ...os.Signal) {
+	if len(sigs) == 0 {
+		return
+	}
+
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, sigs...)
+	defer signal.Stop(ch)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ch:
+			if err := l.Reopen(); err != nil && onErr != nil {
+				onErr(err)
+			}
+		}
+	}
 }
 
 // Close flushes all pending log entries and closes all opened outputs.

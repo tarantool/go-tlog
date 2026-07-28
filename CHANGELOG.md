@@ -9,8 +9,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Text and JSON handlers compatible with slog.
+- Support for reopening log files.
 
 ### Changed
+- Logger outputs close is thread-safe now.
 
 ### Fixed
 

@@ -139,3 +139,36 @@ func Test_Outputs_Multiple(t *testing.T) {
 	require.NoError(err)
 	require.Contains(string(file2Out), "log_message")
 }
+
+func Test_Outputs_Rotate(t *testing.T) {
+	require := require.New(t)
+
+	filename := filepath.Join(t.TempDir(), "Test_Outputs_File.log")
+
+	outputs, err := outputs.New(filename)
+	require.NoError(err)
+
+	_, err = outputs.Write([]byte("log_message1"))
+	require.NoError(err)
+
+	rotated := filename + ".1"
+
+	err = os.Rename(filename, rotated)
+	require.NoError(err)
+
+	err = outputs.Reopen()
+	require.NoError(err)
+
+	_, err = outputs.Write([]byte("log_message2"))
+	require.NoError(err)
+
+	outOld, err := os.ReadFile(rotated)
+	require.NoError(err)
+	require.Contains(string(outOld), "log_message1")
+	require.NotContains(string(outOld), "log_message2")
+
+	out, err := os.ReadFile(filename)
+	require.NoError(err)
+	require.NotContains(string(out), "log_message1")
+	require.Contains(string(out), "log_message2")
+}
