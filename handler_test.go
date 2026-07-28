@@ -17,6 +17,7 @@ func Test_NewJSONHandler(t *testing.T) {
 		t.Parallel()
 
 		var buf bytes.Buffer
+
 		handler := tlog.NewJSONHandler(&buf, &tlog.HandlerOptions{
 			Level:           tlog.LevelDebug,
 			StacktraceLevel: tlog.LevelError,
@@ -35,6 +36,7 @@ func Test_NewJSONHandler(t *testing.T) {
 		t.Parallel()
 
 		var buf bytes.Buffer
+
 		handler := tlog.NewJSONHandler(&buf, &tlog.HandlerOptions{
 			Level: tlog.LevelDebug,
 		})
@@ -51,6 +53,7 @@ func Test_NewJSONHandler(t *testing.T) {
 		t.Parallel()
 
 		var buf bytes.Buffer
+
 		handler := tlog.NewJSONHandler(&buf, nil)
 		logger := slog.New(handler)
 
@@ -64,6 +67,7 @@ func Test_NewJSONHandler(t *testing.T) {
 		t.Parallel()
 
 		var buf bytes.Buffer
+
 		handler := tlog.NewJSONHandler(&buf, &tlog.HandlerOptions{
 			Level: tlog.LevelError,
 		})
@@ -79,6 +83,7 @@ func Test_NewJSONHandler(t *testing.T) {
 		t.Parallel()
 
 		var buf bytes.Buffer
+
 		handler := tlog.NewJSONHandler(&buf, &tlog.HandlerOptions{
 			Level:           tlog.LevelInfo,
 			StacktraceLevel: tlog.LevelError,
@@ -86,6 +91,7 @@ func Test_NewJSONHandler(t *testing.T) {
 				if a.Key == slog.MessageKey {
 					a.Value = slog.StringValue("replaced")
 				}
+
 				return a
 			},
 		})
@@ -106,6 +112,7 @@ func Test_NewTextHandler(t *testing.T) {
 		t.Parallel()
 
 		var buf bytes.Buffer
+
 		handler := tlog.NewTextHandler(&buf, &tlog.HandlerOptions{
 			Level:           tlog.LevelDebug,
 			StacktraceLevel: tlog.LevelError,
@@ -124,6 +131,7 @@ func Test_NewTextHandler(t *testing.T) {
 		t.Parallel()
 
 		var buf bytes.Buffer
+
 		handler := tlog.NewTextHandler(&buf, &tlog.HandlerOptions{
 			Level: tlog.LevelDebug,
 		})
@@ -140,6 +148,7 @@ func Test_NewTextHandler(t *testing.T) {
 		t.Parallel()
 
 		var buf bytes.Buffer
+
 		handler := tlog.NewTextHandler(&buf, nil)
 		logger := slog.New(handler)
 
@@ -153,6 +162,7 @@ func Test_NewTextHandler(t *testing.T) {
 		t.Parallel()
 
 		var buf bytes.Buffer
+
 		handler := tlog.NewTextHandler(&buf, &tlog.HandlerOptions{
 			Level: tlog.LevelError,
 		})
@@ -163,4 +173,47 @@ func Test_NewTextHandler(t *testing.T) {
 		r := require.New(t)
 		r.Empty(buf.String())
 	})
+}
+
+// Test_Handler_StacktraceSurvivesDerivation is a regression test: the
+// stacktrace handler embeds slog.Handler, so without explicit WithAttrs and
+// WithGroup methods the embedded handler answered for it and every logger
+// derived with With or WithGroup lost its stacktraces.
+func Test_Handler_StacktraceSurvivesDerivation(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name   string
+		derive func(*slog.Logger) *slog.Logger
+	}{
+		{
+			name:   "With",
+			derive: func(l *slog.Logger) *slog.Logger { return l.With(slog.String("k", "v")) },
+		},
+		{
+			name:   "WithGroup",
+			derive: func(l *slog.Logger) *slog.Logger { return l.WithGroup("g") },
+		},
+		{
+			name: "With after WithGroup",
+			derive: func(l *slog.Logger) *slog.Logger {
+				return l.WithGroup("g").With(slog.String("k", "v"))
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var buf bytes.Buffer
+
+			handler := tlog.NewJSONHandler(&buf, &tlog.HandlerOptions{
+				Level:           tlog.LevelDebug,
+				StacktraceLevel: tlog.LevelError,
+			})
+
+			tc.derive(slog.New(handler)).Error("fail")
+
+			require.Contains(t, buf.String(), `"stacktrace"`)
+		})
+	}
 }
