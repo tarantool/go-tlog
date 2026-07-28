@@ -12,6 +12,9 @@ import (
 )
 
 // ExampleNew_text shows how to create a text logger that writes to stdout.
+// location, so it cannot be compared against a fixed string.
+//
+//nolint:testableexamples // Output carries a timestamp and a source
 func ExampleNew_text() {
 	log, err := tlog.New(tlog.Opts{
 		Level:  tlog.LevelInfo,
@@ -21,6 +24,7 @@ func ExampleNew_text() {
 	if err != nil {
 		panic(err)
 	}
+
 	defer func() { _ = log.Close() }()
 
 	logger := log.Logger().With(slog.String("component", "example_text"))
@@ -28,6 +32,9 @@ func ExampleNew_text() {
 }
 
 // ExampleNew_json shows how to create a JSON logger that writes to stdout.
+// location, so it cannot be compared against a fixed string.
+//
+//nolint:testableexamples // Output carries a timestamp and a source
 func ExampleNew_json() {
 	log, err := tlog.New(tlog.Opts{
 		Level:  tlog.LevelInfo,
@@ -37,6 +44,7 @@ func ExampleNew_json() {
 	if err != nil {
 		panic(err)
 	}
+
 	defer func() { _ = log.Close() }()
 
 	logger := log.Logger().With(
@@ -47,6 +55,9 @@ func ExampleNew_json() {
 }
 
 // ExampleNew_multi shows how to log to multiple destinations at once.
+// location, so it cannot be compared against a fixed string.
+//
+//nolint:testableexamples // Output carries a timestamp and a source
 func ExampleNew_multi() {
 	log, err := tlog.New(tlog.Opts{
 		Level:  tlog.LevelInfo,
@@ -56,10 +67,21 @@ func ExampleNew_multi() {
 	if err != nil {
 		panic(err)
 	}
+
 	defer func() { _ = log.Close() }()
 
 	logger := log.Logger().With(slog.String("component", "example_multi"))
 	logger.Info("message written to stdout and file")
+}
+
+// dropTime removes the timestamp attribute so that an example can declare a
+// fixed expected output. Production code has no reason to do this.
+func dropTime(_ []string, a slog.Attr) slog.Attr {
+	if a.Key == slog.TimeKey {
+		return slog.Attr{}
+	}
+
+	return a
 }
 
 // ExampleNewJSONHandler shows how to create a JSON handler
@@ -68,10 +90,12 @@ func ExampleNewJSONHandler() {
 	handler := tlog.NewJSONHandler(os.Stdout, &tlog.HandlerOptions{
 		Level:           tlog.LevelInfo,
 		StacktraceLevel: tlog.LevelError,
+		ReplaceAttr:     dropTime,
 	})
 	logger := slog.New(handler)
 
-	logger.Info("service started")
+	logger.Info("service started", slog.Int("port", 8080))
+	// Output: {"level":"INFO","msg":"service started","port":8080}
 }
 
 // ExampleNewTextHandler shows how to create a text handler
@@ -80,10 +104,12 @@ func ExampleNewTextHandler() {
 	handler := tlog.NewTextHandler(os.Stdout, &tlog.HandlerOptions{
 		Level:           tlog.LevelInfo,
 		StacktraceLevel: tlog.LevelError,
+		ReplaceAttr:     dropTime,
 	})
 	logger := slog.New(handler)
 
-	logger.Info("service started")
+	logger.Info("service started", slog.Int("port", 8080))
+	// Output: INFO "service started" port=8080
 }
 
 // ExampleLogger_Reopen shows how to reopen log file outputs.
