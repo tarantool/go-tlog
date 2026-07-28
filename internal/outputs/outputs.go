@@ -10,6 +10,15 @@ import (
 	"sync"
 )
 
+// Errors reported when a path list cannot be turned into outputs.
+var (
+	// ErrEmptyPaths is returned by New when the path list is empty.
+	ErrEmptyPaths = errors.New("empty paths")
+	// ErrEmptyPath is returned when the path list contains an empty element,
+	// as in "stdout,,stderr".
+	ErrEmptyPath = errors.New("empty path")
+)
+
 // Outputs is io.WriteCloser for multiple output paths.
 type Outputs struct {
 	mu    sync.RWMutex
@@ -22,7 +31,7 @@ type Outputs struct {
 // Use "stdout" and "stderr" for os streams and file paths for files.
 func New(paths string) (*Outputs, error) {
 	if paths == "" {
-		return nil, errors.New("empty paths")
+		return nil, ErrEmptyPaths
 	}
 
 	pathsSlice := splitPaths(paths)
@@ -84,8 +93,11 @@ func openFile(path string) (*os.File, error) {
 	case "stderr":
 		return os.Stderr, nil
 	case "":
-		return nil, errors.New("empty path")
+		return nil, ErrEmptyPath
 	default:
+		// #nosec G304 -- the log destination is chosen by the application that
+		// configures the logger, so a variable path is the intended behavior.
+		//nolint:wrapcheck // New wraps this error with the offending path.
 		return os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, fs.FileMode(defaultFilePerms))
 	}
 }
@@ -111,6 +123,8 @@ func (o *Outputs) Write(p []byte) (int, error) {
 	o.mu.RLock()
 	defer o.mu.RUnlock()
 
+	//nolint:wrapcheck // io.Writer callers match on the underlying error
+	// (os.ErrClosed, syscall.EPIPE); wrapping it would break that.
 	return o.w.Write(p)
 }
 
