@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Tarantool community chat (EN)
+    url: https://telegram.me/tarantool
+    about: Questions about usage are usually answered faster here.
+  - name: Tarantool community chat (RU)
+    url: https://telegram.me/tarantoolru
+    about: Russian-speaking community chat.
