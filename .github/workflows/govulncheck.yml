@@ -1,0 +1,27 @@
+name: govulncheck
+
+# Vulnerability data changes independently of this repository, so a green
+# result on the last push says nothing a week later. Run it on a schedule as
+# well as on changes to the dependency set.
+on:
+  push:
+    branches: [master]
+    paths:
+      - go.mod
+      - go.sum
+      - .github/workflows/govulncheck.yml
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  govulncheck:
+    name: govulncheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: golang/govulncheck-action@v1
+        with:
+          go-version-input: stable
+          repo-checkout: false
