@@ -3,17 +3,36 @@ name: testing
 env:
   GOLANGCI_LINT_VERSION: v2.11.4
 
+# Every job below skips pull requests opened from this repository, because the
+# branch behind such a PR already ran on push. That split only works if push
+# covers every branch, not just master.
 on:
   push:
-    branches: [master]
+    branches: ["**"]
   pull_request:
     branches: ["**"]
   workflow_dispatch:
 
 jobs:
   test:
-    name: Go tests
+    name: Go ${{ matrix.golang }}
+    # Run on push and on pull requests from forks, but skip pull requests from
+    # this repository — its branches are already covered by the push event.
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name != github.repository)
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # go.mod requires 1.24, so an older entry would only make the toolchain
+        # auto-upgrade itself and test 1.24 twice. GOTOOLCHAIN=local keeps each
+        # entry honest about the version it claims to cover.
+        golang: ["1.24", "stable"]
+    env:
+      GOTOOLCHAIN: local
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,7 +40,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.24.x"
+          go-version: ${{ matrix.golang }}
           check-latest: true
 
       - name: Download deps
@@ -33,10 +52,49 @@ jobs:
       - name: Run tests with race-detector
         run: make test-race
 
+      - name: Shake out flaky tests
+        run: go test -race -count=10 ./...
+
+  coverage:
+    name: Coverage
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name != github.repository)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          check-latest: true
+
+      - name: Run tests with coverage
+        run: make test-coverage
+
+      - name: Send coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          file: coverage.out
+          format: golang
+
   golangci-lint:
+    name: Lint
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name != github.repository)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          check-latest: true
       - uses: actions/checkout@v5
 
       - name: golangci-lint
@@ -55,3 +113,32 @@ jobs:
           args: --output.text.path stdout --config=.golangci.yaml
           version: ${{ env.GOLANGCI_LINT_VERSION }}
 
+  codespell:
+    name: Spell check
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name != github.repository)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: codespell-project/actions-codespell@v2
+
+  generate:
+    name: Check generated code
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name != github.repository)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          check-latest: true
+
+      - name: go generate leaves no diff
+        run: make generate-check

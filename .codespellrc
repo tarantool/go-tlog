@@ -1,0 +1,6 @@
+[codespell]
+skip = .git,*.sum,vendor,coverage.out,internal/slog
+check-filenames =
+check-hidden =
+# "nd" is a false positive on hex/short identifiers in test fixtures.
+ignore-words-list = nd
