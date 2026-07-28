@@ -8,17 +8,51 @@ issues:
   max-same-issues: 0
   max-issues-per-linter: 0
 
-linters:
+formatters:
   enable:
-    - govet
-    - staticcheck
-    - revive
-    - errcheck
-    - ineffassign
-    - unused
-    - misspell
-    - gocritic
+    - gofmt
+    - gofumpt
+    - goimports
   settings:
+    goimports:
+      local-prefixes: [github.com/tarantool/go-tlog]
+  exclusions:
+    paths:
+      # Vendored fork of the standard library's log/slog. Kept byte-close to
+      # upstream so that changes can be diffed against it.
+      - internal/slog
+
+linters:
+  # Everything is on by default; each exception below is a deliberate decision
+  # with a reason, not a silent concession.
+  default: all
+  disable:
+    - cyclop # Complexity metrics duplicate gocognit/gocyclo and fire on the
+    - gocyclo # level/format switches, which are flat and readable by design.
+    - gocognit
+    - maintidx
+    - funlen # Table-driven tests are long on purpose.
+    - ireturn # NewTextHandler/NewJSONHandler must return slog.Handler; that
+      # is the interface the standard library asks a handler to satisfy.
+    - godox # TODO comments inherited from the upstream log/slog fork.
+    - wsl # Superseded by wsl_v5; enabling both double-reports.
+    - exhaustruct # Requires every struct field to be set explicitly, which
+      # defeats the zero-value defaults that Opts is built around.
+    - varnamelen # Short receivers and loop variables are idiomatic Go.
+    - nonamedreturns # Named returns are used for documentation value.
+    - gochecknoglobals # Package-level defaults are intentional here.
+    - paralleltest # The suite exercises process-global state — os.Stdout,
+      # os.Stderr and shared temp files — so tests must not run concurrently.
+
+  settings:
+    lll:
+      line-length: 120
+    exhaustive:
+      # Level and Format switches end in a default branch that handles the
+      # zero value; that is the exhaustiveness guarantee here.
+      default-signifies-exhaustive: true
+    misspell:
+      locale: US
     revive:
       severity: warning
       rules:
@@ -29,19 +63,39 @@ linters:
         - name: blank-imports
         - name: var-declaration
         - name: if-return
-    misspell:
-      locale: US
+    depguard:
+      # Pins the import surface of a public module: an accidental dependency on
+      # a non-public package fails lint instead of surfacing after release.
+      rules:
+        main:
+          files: ["$all", "!$test"]
+          allow:
+            - $gostd
+            - github.com/tarantool/go-tlog
+        test:
+          files: ["$test"]
+          allow:
+            - $gostd
+            - github.com/tarantool/go-tlog
+            - github.com/stretchr/testify
+
   exclusions:
+    paths:
+      # See the formatters exclusion above.
+      - internal/slog
     rules:
+      - path: _test.go
+        linters:
+          - err113 # Test errors are compared by value, not wrapped.
+          - wrapcheck
+          - funlen
+          - dupl # Table-driven cases repeat by nature.
+          - gosec # Tests read back files they created under t.TempDir().
       - path: ^_examples/
-        linters: [revive, staticcheck, govet, gocritic]
+        linters:
+          - revive
+          - staticcheck
+          - govet
+          - gocritic
       - path: \.pb\.go$|_gen\.go$
         linters: [all]
-
-formatters:
-  enable:
-    - gofumpt
-    - goimports
-  settings:
-    goimports:
-      local-prefixes: [github.com/tarantool/go-tlog]

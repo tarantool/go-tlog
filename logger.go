@@ -178,5 +178,7 @@ func (l *Logger) ReopenOnSignal(ctx context.Context, onErr func(error), sigs ...
 
 // Close flushes all pending log entries and closes all opened outputs.
 func (l *Logger) Close() error {
+	//nolint:wrapcheck // Outputs.Close already returns a joined error naming
+	// each destination that failed; wrapping adds no information.
 	return l.outputs.Close()
 }

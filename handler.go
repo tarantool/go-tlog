@@ -31,6 +31,7 @@ func (o *HandlerOptions) slogHandlerOptions() slog.HandlerOptions {
 			if o.ReplaceAttr != nil {
 				a = o.ReplaceAttr(groups, a)
 			}
+
 			return a
 		},
 	}
