@@ -286,7 +286,6 @@ func Test_LoggerReopen(t *testing.T) {
 
 func Test_LoggerReopenOnSignal(t *testing.T) {
 	// Do not run in parallel, sends signals to self process.
-
 	r := require.New(t)
 
 	dir := t.TempDir()
@@ -370,7 +369,7 @@ func Test_LoggerConcurrency(t *testing.T) {
 
 	var wg sync.WaitGroup
 
-	for i := 0; i < goroutines; i++ {
+	for i := range goroutines {
 		wg.Add(3)
 
 		// Concurrent Logger().Info() calls.

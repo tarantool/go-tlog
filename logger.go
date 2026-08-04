@@ -144,6 +144,8 @@ func (l *Logger) Logger() *slog.Logger {
 // Reopen closes current file outputs and opens them once again.
 // Can be used for logrotate.
 func (l *Logger) Reopen() error {
+	//nolint:wrapcheck // Outputs.Reopen already names the failed stage; wrapping
+	// again would only repeat it.
 	return l.outputs.Reopen()
 }
 
@@ -161,6 +163,7 @@ func (l *Logger) ReopenOnSignal(ctx context.Context, onErr func(error), sigs ...
 	}
 
 	ch := make(chan os.Signal, 1)
+
 	signal.Notify(ch, sigs...)
 	defer signal.Stop(ch)
 
@@ -169,7 +172,8 @@ func (l *Logger) ReopenOnSignal(ctx context.Context, onErr func(error), sigs ...
 		case <-ctx.Done():
 			return
 		case <-ch:
-			if err := l.Reopen(); err != nil && onErr != nil {
+			err := l.Reopen()
+			if err != nil && onErr != nil {
 				onErr(err)
 			}
 		}
