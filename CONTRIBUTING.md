@@ -147,7 +147,7 @@ Describe fixes in the past tense and put the issue reference at the end:
 ```markdown
 ### Fixed
 
-- Fixed a panic when Path pointed at an unwritable directory (gh-42).
+- Fixed a panic when Path pointed at an unwritable directory (#42).
 ```
 
 ## License
