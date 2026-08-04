@@ -143,7 +143,8 @@ func (o *Outputs) Reopen() error {
 	o.files = files
 	o.w = w
 
-	if err := multiClose(oldFiles); err != nil {
+	err = multiClose(oldFiles)
+	if err != nil {
 		return fmt.Errorf("failed to close old outputs (reopen succeeded): %w", err)
 	}
 

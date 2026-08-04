@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"github.com/tarantool/go-tlog"
@@ -117,7 +118,14 @@ func ExampleNewTextHandler() {
 // tool moves the log file aside, call Reopen so that subsequent
 // log entries are written to a freshly created file.
 func ExampleLogger_Reopen() {
-	path := "/tmp/tlog_example_reopen.log"
+	dir, err := os.MkdirTemp("", "tlog_example_reopen")
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() { _ = os.RemoveAll(dir) }()
+
+	path := filepath.Join(dir, "example.log")
 
 	log, err := tlog.New(tlog.Opts{
 		Level:  tlog.LevelInfo,
@@ -127,36 +135,51 @@ func ExampleLogger_Reopen() {
 	if err != nil {
 		panic(err)
 	}
+
 	defer func() { _ = log.Close() }()
 
 	logger := log.Logger().With(slog.String("component", "example_reopen"))
 	logger.Info("message before rotation")
 
 	// Simulate logrotate: move the current file aside.
-	if err := os.Rename(path, path+".1"); err != nil {
+	err = os.Rename(path, path+".1")
+	if err != nil {
 		panic(err)
 	}
 
 	// Reopen outputs so new entries go to a newly created file.
-	if err := log.Reopen(); err != nil {
+	err = log.Reopen()
+	if err != nil {
 		panic(err)
 	}
 
 	logger.Info("message after rotation")
+
+	// Entries go to the log file, so nothing is written to stdout.
+
+	// Output:
 }
 
 // ExampleLogger_ReopenOnSignal shows how to reopen log file outputs
 // automatically when a signal is received. It is intended to be run in
 // a separate goroutine, e.g. to reopen logs on SIGHUP sent by logrotate.
 func ExampleLogger_ReopenOnSignal() {
+	dir, err := os.MkdirTemp("", "tlog_example_reopen_on_signal")
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() { _ = os.RemoveAll(dir) }()
+
 	log, err := tlog.New(tlog.Opts{
 		Level:  tlog.LevelInfo,
 		Format: tlog.FormatText,
-		Path:   "/tmp/tlog_example_reopen_on_signal.log",
+		Path:   filepath.Join(dir, "example.log"),
 	})
 	if err != nil {
 		panic(err)
 	}
+
 	defer func() { _ = log.Close() }()
 
 	// Stop reopening on Ctrl+C / termination.
@@ -171,4 +194,8 @@ func ExampleLogger_ReopenOnSignal() {
 	}, syscall.SIGHUP)
 
 	log.Logger().Info("service started")
+
+	// Entries go to the log file, so nothing is written to stdout.
+
+	// Output:
 }
